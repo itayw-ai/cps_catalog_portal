@@ -1,0 +1,9 @@
+# Databricks App configuration for React + FastAPI app
+command:
+  - python
+  - backend/start.py
+
+env:
+  - name: PGHOST
+  - name: PGDATABASE
+  - name: DATABRICKS_CLIENT_ID

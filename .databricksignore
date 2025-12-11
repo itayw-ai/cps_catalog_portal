@@ -1,0 +1,31 @@
+# IMPORTANT: frontend/dist/ MUST be synced - it contains the built React app
+# Note: .databricksignore uses gitignore syntax but inverted - patterns here are IGNORED
+# To INCLUDE something, you need to NOT list it here, or use negation
+
+# Ignore source files and dev dependencies (but NOT dist/)
+node_modules/
+frontend/src/
+frontend/public/
+frontend/vite.config.js
+frontend/package.json
+frontend/package-lock.json
+frontend/.vite/
+frontend/.gitignore
+
+# DO NOT ignore these (they are needed):
+# frontend/dist/  <-- Make sure this is NOT listed above
+
+# Ignore git and IDE files
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore local build artifacts (but sync the built dist/)
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+

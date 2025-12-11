@@ -1,0 +1,109 @@
+.group-chooser {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f0ff 0%, #faf8ff 100%);
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.chooser-header {
+  background: linear-gradient(135deg, #6E34F5 0%, #8b5cf6 100%);
+  padding: 24px 30px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(110, 52, 245, 0.2);
+}
+
+/* Back button styling is now in global index.css */
+
+.chooser-header h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 28px;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.toggle-validated {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: white;
+  font-weight: 500;
+}
+
+.toggle-validated input[type="checkbox"] {
+  accent-color: white;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.variant-card {
+  background: linear-gradient(135deg, #ffffff 0%, #faf8ff 100%);
+  padding: 24px;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid #e9d5ff;
+  box-shadow: 0 2px 8px rgba(110, 52, 245, 0.1);
+  transition: all 0.2s ease;
+}
+
+.variant-card:hover {
+  border-color: #6E34F5;
+  box-shadow: 0 4px 12px rgba(110, 52, 245, 0.2);
+}
+
+.variant-info {
+  flex: 1;
+}
+
+.variant-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.variant-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.btn-open {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6E34F5 0%, #8b5cf6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(110, 52, 245, 0.2);
+  transition: all 0.2s ease;
+}
+
+.btn-open:hover {
+  background: linear-gradient(135deg, #5a2ac4 0%, #7c3aed 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(110, 52, 245, 0.3);
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+

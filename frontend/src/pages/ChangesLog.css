@@ -1,0 +1,122 @@
+.changes-log {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f0ff 0%, #faf8ff 100%);
+  padding: 20px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.log-header {
+  background: linear-gradient(135deg, #6E34F5 0%, #8b5cf6 100%);
+  padding: 24px 30px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 4px 12px rgba(110, 52, 245, 0.2);
+}
+
+/* Back button styling is now in global index.css */
+
+.log-header h1 {
+  margin: 0;
+  font-size: 28px;
+  color: white;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.log-content {
+  background: linear-gradient(135deg, #ffffff 0%, #faf8ff 100%);
+  padding: 20px;
+  border-radius: 16px;
+  border: 2px solid #e9d5ff;
+  box-shadow: 0 4px 12px rgba(110, 52, 245, 0.1);
+}
+
+.changes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.change-item {
+  border: 2px solid #e9d5ff;
+  border-radius: 12px;
+  padding: 20px;
+  background: white;
+  transition: all 0.2s ease;
+  min-width: 0; /* Prevents overflow */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.change-item:hover {
+  border-color: #6E34F5;
+  box-shadow: 0 2px 8px rgba(110, 52, 245, 0.1);
+}
+
+.change-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #eee;
+  gap: 16px;
+}
+
+.change-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0; /* Prevents overflow */
+}
+
+.log-filters {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-item label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #6E34F5;
+}
+
+.change-date {
+  font-size: 12px;
+  color: #666;
+}
+
+.change-body p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+
+.loading,
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+

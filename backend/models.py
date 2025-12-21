@@ -65,8 +65,8 @@ def get_effective_catalog(validated_only: bool = False, search_term: str = "",
     """
     session = get_db_session()
     try:
-        # Views are created without schema qualifier per provided DDL
-        view_name = "v_cps_catalog_effective_validated" if validated_only else "v_cps_catalog_effective"
+        # Views are in the new schema
+        view_name = "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective_validated" if validated_only else "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective"
         
         query = f"SELECT * FROM {view_name}"
         conditions = []
@@ -111,7 +111,7 @@ def get_device_by_uuid(device_uuid: str, validated_only: bool = False) -> Option
     """Get a single device by device UUID."""
     session = get_db_session()
     try:
-        view_name = "v_cps_catalog_effective_validated" if validated_only else "v_cps_catalog_effective"
+        view_name = "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective_validated" if validated_only else "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective"
         query = text(f"SELECT * FROM {view_name} WHERE device_uuid = :device_uuid")
         result = session.execute(query, {"device_uuid": device_uuid})
         row = result.fetchone()
@@ -132,7 +132,7 @@ def get_device_overrides(device_uuid: str) -> List[Dict[str, Any]]:
     session = get_db_session()
     try:
         query = text("""
-            SELECT * FROM user_input_cps_catalog
+            SELECT * FROM databricks_postgres.mvp_gold_tables.user_input_cps_catalog
             WHERE device_uuid = :device_uuid
             ORDER BY changed_at DESC
         """)
@@ -152,7 +152,7 @@ def get_gold_row(device_uuid: str) -> Optional[Dict[str, Any]]:
     """Get the gold (base) row for a device by UUID."""
     session = get_db_session()
     try:
-        query = text("SELECT * FROM cps_catalog_gold WHERE device_uuid = :device_uuid")
+        query = text("SELECT * FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips WHERE device_uuid = :device_uuid")
         result = session.execute(query, {"device_uuid": device_uuid})
         row = result.fetchone()
         if row:
@@ -207,21 +207,34 @@ def commit_field_override(device_uuid: str, field_name: str, new_value: str,
         snapshot_after = snapshot_before.copy()
         snapshot_after[field_name] = new_value
         
-        # When apply_for_all is true, we insert ONE row with device_uuid=NULL or a placeholder
-        # The view will use this row to apply to all devices with the same cps_id
-        # We'll use the current device_uuid for the record, but the view logic will handle applying it to all
+        # Always verify that the device_uuid exists in gold_rockwell_philips to satisfy foreign key constraint
+        # The device might exist in the view but not in the base gold table
+        verify_uuid_query = text("""
+            SELECT device_uuid 
+            FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips 
+            WHERE device_uuid = :device_uuid
+        """)
+        uuid_exists = session.execute(verify_uuid_query, {"device_uuid": device_uuid}).fetchone()
         
-        # For apply_for_all, we can either:
-        # Option 1: Use NULL device_uuid (if allowed) - but this might break existing logic
-        # Option 2: Use the current device_uuid but mark apply_for_all=true, and the view handles it
-        # Let's go with Option 2 for now, but we'll need to update the view
-        
-        # Actually, let's use a special approach: when apply_for_all=true, we still need a device_uuid
-        # but we'll use the first device with this cps_id, and the view will check apply_for_all flag
-        target_device_uuid = device_uuid
+        if uuid_exists:
+            # The device_uuid exists in gold table, use it
+            target_device_uuid = device_uuid
+        else:
+            # Device doesn't exist in gold table, find a valid one for this cps_id
+            find_uuid_query = text("""
+                SELECT device_uuid 
+                FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips 
+                WHERE cps_id = :cps_id 
+                LIMIT 1
+            """)
+            uuid_result = session.execute(find_uuid_query, {"cps_id": cps_id}).fetchone()
+            if uuid_result:
+                target_device_uuid = uuid_result[0]
+            else:
+                return {"success": False, "error": f"No device found in gold_rockwell_philips for cps_id {cps_id}"}
         
         query = text("""
-            INSERT INTO cps.user_input_cps_catalog
+            INSERT INTO databricks_postgres.mvp_gold_tables.user_input_cps_catalog
             (device_uuid, cps_id, field_name, new_value, editor_user_id, editor_user_name, 
             note, snapshot_before, snapshot_after, source, is_validated, apply_for_all)
             VALUES
@@ -233,7 +246,7 @@ def commit_field_override(device_uuid: str, field_name: str, new_value: str,
             "device_uuid": target_device_uuid,
             "cps_id": cps_id,
             "field_name": field_name,
-            "new_value": new_value,
+            "new_value": str(new_value) if new_value is not None else '',
             "editor_user_id": editor_user_id,
             "editor_user_name": editor_user_name,
             "note": note,
@@ -247,6 +260,9 @@ def commit_field_override(device_uuid: str, field_name: str, new_value: str,
         return {"success": True, "override_id": override_id}
     except Exception as e:
         session.rollback()
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in commit_field_override: {error_trace}")
         return {"success": False, "error": str(e)}
     finally:
         session.close()
@@ -257,15 +273,15 @@ def get_stats() -> Dict[str, Any]:
     session = get_db_session()
     try:
         # Total devices
-        query = text("SELECT COUNT(*) FROM cps_catalog_gold")
+        query = text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips")
         total = session.execute(query).scalar()
         
         # Vendors
-        query = text("SELECT COUNT(DISTINCT vendor) FROM cps_catalog_gold WHERE vendor IS NOT NULL")
+        query = text("SELECT COUNT(DISTINCT vendor) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips WHERE vendor IS NOT NULL")
         vendors = session.execute(query).scalar()
         
         # Total overrides
-        query = text("SELECT COUNT(*) FROM user_input_cps_catalog")
+        query = text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.user_input_cps_catalog")
         total_overrides = session.execute(query).scalar()
         
         return {
@@ -280,7 +296,7 @@ def get_stats() -> Dict[str, Any]:
 from sqlalchemy import text
 
 def get_groups_by_cps_id(validated_only: bool=False, search_term: str="", filters: Optional[Dict[str,Any]]=None):
-    view_name = "v_cps_catalog_effective_validated" if validated_only else "v_cps_catalog_effective"
+    view_name = "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective_validated" if validated_only else "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective"
     session = get_db_session()
     try:
         base = f"SELECT * FROM {view_name}"
@@ -321,7 +337,7 @@ def get_groups_by_cps_id(validated_only: bool=False, search_term: str="", filter
 
 
 def get_cps_id_variants(cps_id: str, validated_only: bool=False):
-    view_name = "v_cps_catalog_effective_validated" if validated_only else "v_cps_catalog_effective"
+    view_name = "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective_validated" if validated_only else "databricks_postgres.mvp_gold_tables.v_cps_catalog_effective"
     session = get_db_session()
     try:
         q = text(f"SELECT * FROM {view_name} WHERE cps_id = :cid ORDER BY model, cps_vector")
@@ -372,8 +388,8 @@ def get_all_changes(limit: int = 1000) -> List[Dict[str, Any]]:
                 g.model,
                 g.vendor,
                 g.cps_id as device_cps_id
-            FROM cps.user_input_cps_catalog u
-            LEFT JOIN cps.cps_catalog_gold g ON u.device_uuid = g.device_uuid
+            FROM databricks_postgres.mvp_gold_tables.user_input_cps_catalog u
+            LEFT JOIN databricks_postgres.mvp_gold_tables.gold_rockwell_philips g ON u.device_uuid = g.device_uuid
             ORDER BY u.changed_at DESC
             LIMIT :limit
         """)
@@ -401,7 +417,7 @@ def get_device_changes_over_time(device_uuid: str, days: int = 7) -> List[Dict[s
             SELECT 
                 DATE(changed_at) as date,
                 COUNT(*) as count
-            FROM cps.user_input_cps_catalog
+            FROM databricks_postgres.mvp_gold_tables.user_input_cps_catalog
             WHERE device_uuid = :device_uuid
               AND changed_at >= CURRENT_DATE - INTERVAL '1 day' * :days
             GROUP BY DATE(changed_at)
@@ -426,7 +442,7 @@ def delete_change(change_id: int) -> bool:
     session = get_db_session()
     try:
         query = text("""
-            DELETE FROM cps.user_input_cps_catalog
+            DELETE FROM databricks_postgres.mvp_gold_tables.user_input_cps_catalog
             WHERE id = :change_id
         """)
         result = session.execute(query, {"change_id": change_id})
@@ -439,7 +455,7 @@ def delete_change(change_id: int) -> bool:
         session.close()
 
 
-def get_table_schema(table_name: str = "cps_catalog_gold") -> Dict[str, Dict[str, Any]]:
+def get_table_schema(table_name: str = "gold_rockwell_philips") -> Dict[str, Dict[str, Any]]:
     """
     Get column metadata from the database schema.
     Returns a dict mapping column names to their metadata (type, nullable, etc.)
@@ -456,7 +472,7 @@ def get_table_schema(table_name: str = "cps_catalog_gold") -> Dict[str, Dict[str
                 c.numeric_precision,
                 c.numeric_scale
             FROM information_schema.columns c
-            WHERE c.table_schema = 'cps' 
+            WHERE c.table_schema = 'mvp_gold_tables' 
               AND c.table_name = :table_name
               AND c.column_name NOT IN ('created_at', 'updated_at', 'device_uuid', 'risk_score', 'needs_vector')
               ORDER BY c.ordinal_position

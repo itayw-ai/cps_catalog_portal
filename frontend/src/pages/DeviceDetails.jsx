@@ -16,14 +16,14 @@ import './DeviceDetails.css'
 
 // Special field configurations that override schema detection
 const SPECIAL_FIELD_CONFIG = {
-  category: { type: 'select', options: ['OT', 'IoT', 'IT','Medical Devices'] },
+  category: { type: 'select', options: ['OT', 'IoT', 'IT','Medical'] },
   // device_type will be handled dynamically by the backend based on cps.device_type_family enum
-  is_eol: { type: 'select', options: ['Active', 'EOL'] },
+  is_eol: { type: 'select', options: ['Yes', 'No'] },
   potential_cves: { type: 'cve_table' },
   certified_patches: { type: 'patch_table' },
   pre_installed_applications: { type: 'apps_table' },
   patching_responsibility: { type: 'select', options: ['Vendor', 'User', 'Shared'] },
-  network_type: { type: 'multiselect', options: ['WiFi', 'Ethernet'] },
+  network_type: { type: 'multiselect', options: ['Nested', 'Ethernet', 'Wireless', 'Serial'] },
 }
 
 // Fields that should not be editable

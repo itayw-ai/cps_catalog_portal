@@ -91,7 +91,7 @@ def setup_db_engine():
     def set_search_path(dbapi_conn, connection_record):
         # psycopg2 or psycopg3 both expose .cursor()
         with dbapi_conn.cursor() as cur:
-            cur.execute("SET search_path TO cps;")
+            cur.execute("SET search_path TO mvp_gold_tables;")
 
     return engine
 

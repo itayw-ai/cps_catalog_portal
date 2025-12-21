@@ -25,7 +25,7 @@ try:
     
     # Test if views exist
     try:
-        result = session.execute(text("SELECT COUNT(*) FROM v_cps_catalog_effective LIMIT 1"))
+        result = session.execute(text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.v_cps_catalog_effective LIMIT 1"))
         count = result.scalar()
         print(f"✓ View v_cps_catalog_effective exists (count: {count})")
     except Exception as e:
@@ -33,11 +33,11 @@ try:
     
     # Test if table exists
     try:
-        result = session.execute(text("SELECT COUNT(*) FROM cps_catalog_gold"))
+        result = session.execute(text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips"))
         count = result.scalar()
-        print(f"✓ Table cps_catalog_gold exists (count: {count})")
+        print(f"✓ Table gold_rockwell_philips exists (count: {count})")
     except Exception as e:
-        print(f"✗ Table cps_catalog_gold error: {e}")
+        print(f"✗ Table gold_rockwell_philips error: {e}")
     
     session.close()
     print("\n✓ All tests passed!")

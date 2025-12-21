@@ -50,17 +50,21 @@ def validate_url(value: str) -> Tuple[bool, Optional[str]]:
     if not value or not value.strip():
         return True, None  # Empty is valid
     
+    # Convert to string if not already
+    value_str = str(value).strip()
+    
+    # More lenient URL pattern - allows various URL formats
     url_pattern = re.compile(
         r'^https?://'  # http:// or https://
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
         r'localhost|'  # localhost...
         r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
         r'(?::\d+)?'  # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r'(?:/?|[/?].*)?$', re.IGNORECASE)  # More lenient path matching
     
-    if url_pattern.match(value):
+    if url_pattern.match(value_str):
         return True, None
-    return False, "Invalid URL format"
+    return False, f"Invalid URL format. URL must start with http:// or https://. Got: {value_str[:50]}"
 
 
 def validate_enum(value: str, valid_values: list) -> Tuple[bool, Optional[str]]:

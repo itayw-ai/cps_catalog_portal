@@ -330,7 +330,7 @@ async def get_schema_endpoint():
     """Get database schema metadata for dynamic field rendering"""
     try:
         from models import get_table_schema
-        schema = get_table_schema("cps_catalog_gold")
+        schema = get_table_schema("gold_rockwell_philips")
         return {
             "success": True,
             "data": to_jsonable(schema)

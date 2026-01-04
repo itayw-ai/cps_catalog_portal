@@ -33,11 +33,11 @@ try:
     
     # Test if table exists
     try:
-        result = session.execute(text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips"))
+        result = session.execute(text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2"))
         count = result.scalar()
-        print(f"✓ Table gold_rockwell_philips exists (count: {count})")
+        print(f"✓ Table gold_rockwell_philips_v2 exists (count: {count})")
     except Exception as e:
-        print(f"✗ Table gold_rockwell_philips error: {e}")
+        print(f"✗ Table gold_rockwell_philips_v2 error: {e}")
     
     session.close()
     print("\n✓ All tests passed!")

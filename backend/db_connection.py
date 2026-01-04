@@ -4,11 +4,26 @@ Database connection module for Databricks App.
 Uses OAuth token authentication with Lakebase Postgres.
 """
 import os
+from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import NullPool
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.core import Config
+
+# Load .env file if it exists (for local development)
+try:
+    from dotenv import load_dotenv
+    # Look for .env in the backend directory or parent directory
+    env_path = Path(__file__).parent / '.env'
+    if not env_path.exists():
+        env_path = Path(__file__).parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"Loaded environment variables from {env_path}")
+except ImportError:
+    # python-dotenv not installed, skip
+    pass
 
 
 def get_db_connection_string() -> str:
@@ -18,9 +33,46 @@ def get_db_connection_string() -> str:
     
     if is_local_dev:
         # Local development mode - use Databricks token authentication
-        host = os.getenv("PGHOST", "localhost")
-        port = os.getenv("PGPORT", "5432")
-        db_name = os.getenv("PGDATABASE", "postgres")
+        host_raw = os.getenv("PGHOST", "localhost")
+        
+        # Handle JDBC URL format: jdbc:postgresql://host:port/database
+        if host_raw.startswith("jdbc:postgresql://"):
+            import re
+            # Extract host, port, and database from JDBC URL
+            match = re.match(r"jdbc:postgresql://([^:/]+)(?::(\d+))?(?:/(.+))?", host_raw)
+            if match:
+                host = match.group(1)
+                port = match.group(2) or os.getenv("PGPORT", "5432")
+                # If database is in the JDBC URL, use it; otherwise use PGDATABASE
+                db_name = match.group(3) or os.getenv("PGDATABASE", "postgres")
+            else:
+                # Fallback: try to parse manually
+                host = host_raw.replace("jdbc:postgresql://", "").split("/")[0].split(":")[0]
+                port = os.getenv("PGPORT", "5432")
+                db_name = os.getenv("PGDATABASE", "postgres")
+        elif ":" in host_raw and "/" in host_raw:
+            # Handle format: host:port/database (without jdbc: prefix)
+            import re
+            match = re.match(r"([^:/]+)(?::(\d+))?(?:/(.+))?", host_raw)
+            if match:
+                host = match.group(1)
+                port = match.group(2) or os.getenv("PGPORT", "5432")
+                db_name = match.group(3) or os.getenv("PGDATABASE", "postgres")
+            else:
+                # Fallback: split manually
+                parts = host_raw.split("/")
+                host_port = parts[0]
+                db_name = parts[1] if len(parts) > 1 else os.getenv("PGDATABASE", "postgres")
+                if ":" in host_port:
+                    host, port = host_port.rsplit(":", 1)
+                else:
+                    host = host_port
+                    port = os.getenv("PGPORT", "5432")
+        else:
+            # Regular hostname format
+            host = host_raw
+            port = os.getenv("PGPORT", "5432")
+            db_name = os.getenv("PGDATABASE", "postgres")
         
         # Try to get username from env, otherwise use client_id from Databricks config
         username = os.getenv("PGUSER")

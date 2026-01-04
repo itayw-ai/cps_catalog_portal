@@ -152,7 +152,7 @@ def get_gold_row(device_uuid: str) -> Optional[Dict[str, Any]]:
     """Get the gold (base) row for a device by UUID."""
     session = get_db_session()
     try:
-        query = text("SELECT * FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips WHERE device_uuid = :device_uuid")
+        query = text("SELECT * FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2 WHERE device_uuid = :device_uuid")
         result = session.execute(query, {"device_uuid": device_uuid})
         row = result.fetchone()
         if row:
@@ -207,11 +207,11 @@ def commit_field_override(device_uuid: str, field_name: str, new_value: str,
         snapshot_after = snapshot_before.copy()
         snapshot_after[field_name] = new_value
         
-        # Always verify that the device_uuid exists in gold_rockwell_philips to satisfy foreign key constraint
+        # Always verify that the device_uuid exists in gold_rockwell_philips_v2 to satisfy foreign key constraint
         # The device might exist in the view but not in the base gold table
         verify_uuid_query = text("""
             SELECT device_uuid 
-            FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips 
+            FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2 
             WHERE device_uuid = :device_uuid
         """)
         uuid_exists = session.execute(verify_uuid_query, {"device_uuid": device_uuid}).fetchone()
@@ -223,7 +223,7 @@ def commit_field_override(device_uuid: str, field_name: str, new_value: str,
             # Device doesn't exist in gold table, find a valid one for this cps_id
             find_uuid_query = text("""
                 SELECT device_uuid 
-                FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips 
+                FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2 
                 WHERE cps_id = :cps_id 
                 LIMIT 1
             """)
@@ -231,7 +231,7 @@ def commit_field_override(device_uuid: str, field_name: str, new_value: str,
             if uuid_result:
                 target_device_uuid = uuid_result[0]
             else:
-                return {"success": False, "error": f"No device found in gold_rockwell_philips for cps_id {cps_id}"}
+                return {"success": False, "error": f"No device found in gold_rockwell_philips_v2 for cps_id {cps_id}"}
         
         query = text("""
             INSERT INTO databricks_postgres.mvp_gold_tables.user_input_cps_catalog
@@ -273,11 +273,11 @@ def get_stats() -> Dict[str, Any]:
     session = get_db_session()
     try:
         # Total devices
-        query = text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips")
+        query = text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2")
         total = session.execute(query).scalar()
         
         # Vendors
-        query = text("SELECT COUNT(DISTINCT vendor) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips WHERE vendor IS NOT NULL")
+        query = text("SELECT COUNT(DISTINCT vendor) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2 WHERE vendor IS NOT NULL")
         vendors = session.execute(query).scalar()
         
         # Total overrides
@@ -389,7 +389,7 @@ def get_all_changes(limit: int = 1000) -> List[Dict[str, Any]]:
                 g.vendor,
                 g.cps_id as device_cps_id
             FROM databricks_postgres.mvp_gold_tables.user_input_cps_catalog u
-            LEFT JOIN databricks_postgres.mvp_gold_tables.gold_rockwell_philips g ON u.device_uuid = g.device_uuid
+            LEFT JOIN databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2 g ON u.device_uuid = g.device_uuid
             ORDER BY u.changed_at DESC
             LIMIT :limit
         """)
@@ -455,7 +455,7 @@ def delete_change(change_id: int) -> bool:
         session.close()
 
 
-def get_table_schema(table_name: str = "gold_rockwell_philips") -> Dict[str, Dict[str, Any]]:
+def get_table_schema(table_name: str = "gold_rockwell_philips_v2") -> Dict[str, Dict[str, Any]]:
     """
     Get column metadata from the database schema.
     Returns a dict mapping column names to their metadata (type, nullable, etc.)

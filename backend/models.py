@@ -272,12 +272,12 @@ def get_stats() -> Dict[str, Any]:
     """Get catalog statistics."""
     session = get_db_session()
     try:
-        # Total devices
-        query = text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2")
+        # Total devices - count from the effective view (same as what users see in catalog)
+        query = text("SELECT COUNT(*) FROM databricks_postgres.mvp_gold_tables.v_cps_catalog_effective")
         total = session.execute(query).scalar()
         
-        # Vendors
-        query = text("SELECT COUNT(DISTINCT vendor) FROM databricks_postgres.mvp_gold_tables.gold_rockwell_philips_v2 WHERE vendor IS NOT NULL")
+        # Vendors - count from the effective view
+        query = text("SELECT COUNT(DISTINCT vendor) FROM databricks_postgres.mvp_gold_tables.v_cps_catalog_effective WHERE vendor IS NOT NULL")
         vendors = session.execute(query).scalar()
         
         # Total overrides
